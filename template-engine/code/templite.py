@@ -101,6 +101,7 @@ class Templite(object):
         """
         self.context = {}
         for context in contexts:
+            # contexts is a tuple
             self.context.update(context)
 
         self.all_vars = set()
@@ -113,6 +114,7 @@ class Templite(object):
         code.add_line("def render_function(context, do_dots):")
         code.indent()
         vars_code = code.add_section()
+        # self.code.append(section)
         code.add_line("result = []")
         code.add_line("append_result = result.append")
         code.add_line("extend_result = result.extend")
@@ -189,6 +191,7 @@ class Templite(object):
 
         for var_name in self.all_vars - self.loop_vars:
             vars_code.add_line("c_%s = context[%r]" % (var_name, var_name))
+            # r% 'name'
 
         code.add_line("return ''.join(result)")
         code.dedent()
