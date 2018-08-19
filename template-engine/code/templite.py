@@ -2,23 +2,36 @@
 
 # Coincidentally named the same as http://code.activestate.com/recipes/496702/
 
+# there classes, TempliteSyntaxError CodeBuilder & Templite
+
 import re
 
 
 class TempliteSyntaxError(ValueError):
     """Raised when a template has a syntax error."""
     pass
+    # 从ValueError继承过来，exception ValueError Raised when a built-in operation or function receives an argument that has the right type but an inappropriate value, and the situation is not described by a more precise exception such as IndexError.
 
 
+# object is a base for all classes. 
+# python3 中默认继承这个类
 class CodeBuilder(object):
     """Build source code conveniently."""
 
     def __init__(self, indent=0):
         self.code = []
         self.indent_level = indent
+        # 两个属性，code 和 indent_level
+        # 初始化时用
 
     def __str__(self):
         return "".join(str(c) for c in self.code)
+        # return a string object of conbine the elements in code[]
+        # str.join(iterable)
+        # iterable: objects of any classes you define with an __iter__() or __getitem__() method.
+        # str(c) for c in self.code is a generator object
+        # join() is a method of strings. That method takes any iterable and iterates over it and joins the contents together. 
+        # https://stackoverflow.com/questions/14447081/python-generator-objects-and-join/14447119#14447119
 
     def add_line(self, line):
         """Add a line of source to the code.
@@ -27,11 +40,17 @@ class CodeBuilder(object):
 
         """
         self.code.extend([" " * self.indent_level, line, "\n"])
+        # " " * self.indent_level, 自带缩进
+        # list.extend(L) Extend the list by appending all the items in the given list. Equivalent to a[len(a):] = L.
+        # By contrast, list.appedn(L), Add an item L to the end of the list. 
+
+
 
     def add_section(self):
         """Add a section, a sub-CodeBuilder."""
         section = CodeBuilder(self.indent_level)
         self.code.append(section)
+        # 加到code里了又
         return section
 
     INDENT_STEP = 4      # PEP8 says so!
@@ -39,10 +58,12 @@ class CodeBuilder(object):
     def indent(self):
         """Increase the current indent for following lines."""
         self.indent_level += self.INDENT_STEP
+        # 加4各空格
 
     def dedent(self):
         """Decrease the current indent for following lines."""
         self.indent_level -= self.INDENT_STEP
+
 
     def get_globals(self):
         """Execute the code, and return a dict of globals it defines."""
@@ -53,6 +74,7 @@ class CodeBuilder(object):
         # Execute the source, defining globals, and return them.
         global_namespace = {}
         exec(python_source, global_namespace)
+        #
         return global_namespace
 
 
