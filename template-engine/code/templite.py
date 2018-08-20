@@ -247,6 +247,7 @@ class Templite(object):
         code.add_line("return ''.join(result)")
         code.dedent()
         self._render_function = code.get_globals()['render_function']
+        # 执行code的代码，然后返回代码定义的函数
 
     def _expr_code(self, expr):
         """Generate a Python expression for `expr`."""
