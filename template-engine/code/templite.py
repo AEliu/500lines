@@ -43,6 +43,7 @@ class CodeBuilder(object):
         # " " * self.indent_level, 自带缩进
         # list.extend(L) Extend the list by appending all the items in the given list. Equivalent to a[len(a):] = L.
         # By contrast, list.appedn(L), Add an item L to the end of the list. 
+        # 都加到code列表中了
 
 
 
@@ -74,7 +75,7 @@ class CodeBuilder(object):
         # Execute the source, defining globals, and return them.
         global_namespace = {}
         exec(python_source, global_namespace)
-        #
+        # global_namespace全局变量
         return global_namespace
 
 
@@ -125,6 +126,8 @@ class Templite(object):
         for context in contexts:
             # contexts is a tuple
             self.context.update(context)
+            # Update the dictionary with the key/value pairs from other, overwriting existing keys. Return None.
+            # update() accepts either another dictionary object or an iterable of key/value pairs (as tuples or other iterables of length two). If keyword arguments are specified, the dictionary is then updated with those key/value pairs: d.update(red=1, blue=2).
 
         self.all_vars = set()
         self.loop_vars = set()
@@ -134,13 +137,17 @@ class Templite(object):
         code = CodeBuilder()
 
         code.add_line("def render_function(context, do_dots):")
-        code.indent()
+        code.indent() 
+        # 以后的增加4个空格
         vars_code = code.add_section()
+        # section = CodeBuilder(self.indent_level)
         # self.code.append(section)
         code.add_line("result = []")
+        # create a list of strings, and join them together at the end. 
         code.add_line("append_result = result.append")
         code.add_line("extend_result = result.extend")
         code.add_line("to_str = str")
+        # Names in Python can be local to a function, global to a module, or built-in to Python. Looking up a local name is faster than looking up a global or a built-in. 
 
         buffered = []
         def flush_output():
@@ -150,10 +157,15 @@ class Templite(object):
             elif len(buffered) > 1:
                 code.add_line("extend_result([%s])" % ", ".join(buffered))
             del buffered[:]
+            # 清空列表， 不能用 del buffered
 
         ops_stack = []
 
         # Split the text to form a list of tokens.
+        # (?s) means dot matches all
+        # .*? nongreedy
+        # If capturing parentheses are used in pattern, then the text of all groups in the pattern are also returned as part of the resulting list.
+        # 有括号，保留匹配部分，留在列表里，此处是tekens
         tokens = re.split(r"(?s)({{.*?}}|{%.*?%}|{#.*?#})", text)
 
         for token in tokens:
@@ -162,10 +174,26 @@ class Templite(object):
                 continue
             elif token.startswith('{{'):
                 # An expression to evaluate.
+                # eg. {{name|upper}}\ {{ product.price|format_price }}\ {{ product.name }} {{name}}
                 expr = self._expr_code(token[2:-2].strip())
                 buffered.append("to_str(%s)" % expr)
+                # 1. {{name}} expr = self._expr_code('name')
+                #    self._variable('name', self.all_vars)
+                #    self.all_vars.add(name), now self.all_vars == {'name'}， code == 'c_name'
+                #    buffered == ["to_str(c_name)", ]
+                # 2. {{name|upper}}， expr = self._expr_code('name|upper')
+                #    code = self._expr_code('name') == 'c_name'
+                #    self._variable('upper', self.all_vars), self.all_vars == {'upper'}
+                #    code = "c_%s(%s)" % (func, code) == "c_upper(c_name)"
+                #    buffered == ["to_str(c_name)", "to_str(c_upper(c_name))"]
+                # 3. {{ product.name }}, expr = self._expr_code('product.name') 
+                #    code = self._expr_code("product") = 'c_product'
+                #    args = ", ".join(repr(d) for d in dots[1:]) == "'name'"
+                #    expr == code = "do_dots(%s, %s)" % (code, args) == "do_dots(c_product, 'name')"
+                #    buffered == ["to_str(c_name)", "to_str(c_upper(c_name))", "to_str(do_dots(c_product, 'name'))"]
             elif token.startswith('{%'):
                 # Action tag: split into words and parse further.
+                # 支持 if & for
                 flush_output()
                 words = token[2:-2].strip().split()
                 if words[0] == 'if':
@@ -214,6 +242,7 @@ class Templite(object):
         for var_name in self.all_vars - self.loop_vars:
             vars_code.add_line("c_%s = context[%r]" % (var_name, var_name))
             # r% 'name'
+            # 在开头的位置插入从字典里的取值
 
         code.add_line("return ''.join(result)")
         code.dedent()
